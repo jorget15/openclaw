@@ -52,6 +52,10 @@
 
 - Runtime baseline: Node **22+** (keep Node + Bun paths working).
 - Install deps: `pnpm install`
+- Security: **never** run remote installer one-liners like `curl ... | bash` / `wget ... | sh`.
+  - Prefer repo-based setup: `pnpm install` (from `pnpm-lock.yaml`) and then the local scripts/commands.
+  - **Hard stop / top priority:** If completing a task appears to require a remote installer (anything like `curl|bash`, `wget|sh`, `irm|iex`, etc.), the agent must **not** run it automatically. The agent must first notify the user and ask for explicit approval, including the exact URL and command it would run.
+  - If an install script must be used for some reason, download it first and review it before running.
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
 - Pre-commit hooks: `prek install` (runs same checks as CI)
 - Also supported: `bun install` (keep `pnpm-lock.yaml` + Bun patching in sync when touching deps/patches).

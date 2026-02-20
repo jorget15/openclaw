@@ -61,4 +61,9 @@
 - **Tests**: `pnpm test`
 - **Build**: `pnpm build`
 
+## Security Guardrail
+
+- Do not use remote installer one-liners (e.g. `curl ... | bash`). Prefer `pnpm install` from the repo lockfile and run local scripts.
+- **Hard stop / top priority:** If a task seems to require any remote installer one-liner (`curl|bash`, `wget|sh`, `irm|iex`, etc.), do **not** run it. First notify the user and ask for explicit approval, including the exact URL and command.
+
 If you are coding together with a human, do NOT use scripts/committer, but git directly and run the above commands manually to ensure quality.
