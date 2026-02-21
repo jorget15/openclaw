@@ -1,8 +1,8 @@
 # OpenClaw Complete Setup Guide
 
-A step-by-step guide to set up OpenClaw with email checking, web browsing (Brave Search + Perplexity), and Ollama-powered heartbeats.
+A step-by-step guide to set up OpenClaw with email checking, web browsing (Brave Search + Perplexity), and a tiered model strategy — Ollama for heartbeats, Gemini Flash for everyday tasks, and GPT/Claude for the heavy lifting.
 
-**Target Platform:** macOS / Linux  
+**Target Platform:** macOS  
 **Time Required:** ~30 minutes
 
 ---
@@ -22,20 +22,21 @@ A step-by-step guide to set up OpenClaw with email checking, web browsing (Brave
 7. [Set Up the Workspace](#7-set-up-the-workspace)
 8. [Configure Email Access](#8-configure-email-access)
 9. [Configure Web Browsing](#9-configure-web-browsing)
-10. [Configure Heartbeats (Ollama)](#10-configure-heartbeats-ollama)
+10. [Configure Heartbeats](#10-configure-heartbeats)
 11. [Start OpenClaw](#11-start-openclaw)
 12. [Verification & Testing](#12-verification--testing)
 13. [Troubleshooting](#13-troubleshooting)
 14. [Complete Configuration Example](#complete-configuration-example)
-15. [Auto-Start on Boot](#auto-start-on-boot)
-16. [Security for VPS Deployments](#security-for-vps-deployments)
-17. [Calendar Integration](#calendar-integration-gog)
-18. [Automated Data Analysis & Email Reports](#automated-data-analysis--email-reports)
-19. [Slack & Discord Notifications](#slack--discord-notifications)
-20. [Database Integration](#database-integration)
-21. [Data Visualization](#data-visualization)
-22. [Webhook Triggers](#webhook-triggers)
-23. [Channel Setup (Optional)](#channel-setup-optional)
+15. [Recommended Model Strategy](#recommended-model-strategy)
+16. [Auto-Start on Boot](#auto-start-on-boot)
+17. [Security for VPS Deployments](#security-for-vps-deployments)
+18. [Calendar Integration](#calendar-integration-gog)
+19. [Automated Data Analysis & Email Reports](#automated-data-analysis--email-reports)
+20. [Slack & Discord Notifications](#slack--discord-notifications)
+21. [Database Integration](#database-integration)
+22. [Data Visualization](#data-visualization)
+23. [Webhook Triggers](#webhook-triggers)
+24. [Channel Setup (Optional)](#channel-setup-optional)
 
 ---
 
@@ -43,7 +44,7 @@ A step-by-step guide to set up OpenClaw with email checking, web browsing (Brave
 
 ### Both Paths
 
-- macOS 12+ or Linux (Ubuntu 20.04+, Debian 11+)
+- macOS 12+
 - Terminal access
 - Git installed (`git --version`)
 - ~2GB free disk space (for Ollama models)
@@ -59,7 +60,9 @@ A step-by-step guide to set up OpenClaw with email checking, web browsing (Brave
 
 ### Optional (for features)
 
-- Anthropic Claude API key or Claude login
+- Anthropic Claude API key or Claude login (for complex tasks)
+- OpenAI API key (alternative for complex tasks)
+- Google Gemini API key (free tier — default model for everyday tasks)
 - Brave Search API key (free tier available)
 - Perplexity API key or OpenRouter API key
 
@@ -80,19 +83,6 @@ OpenClaw requires **Node.js 22+**.
 # Install Node.js 22
 brew install node@22
 brew link node@22
-
-# Verify
-node --version  # Should show v22.x.x
-```
-
-### Linux (Ubuntu/Debian)
-
-```bash
-# Add NodeSource repository
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-
-# Install Node.js
-sudo apt-get install -y nodejs
 
 # Verify
 node --version  # Should show v22.x.x
@@ -147,36 +137,6 @@ brew install --cask docker
 
 # Start Docker Desktop from Applications
 # Wait for Docker to initialize (whale icon in menu bar)
-
-# Verify
-docker --version
-docker compose version
-```
-
-#### Linux (Ubuntu/Debian)
-
-```bash
-# Install Docker from official repos (avoids curl|bash)
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
-
-# Add Docker's GPG key
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Add the repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# Add your user to docker group (logout/login required)
-sudo usermod -aG docker $USER
 
 # Verify
 docker --version
@@ -339,15 +299,6 @@ When using Docker, Ollama runs on the **host** machine. Configure the endpoint t
 }
 ```
 
-On Linux, you may need to use the host's IP:
-
-```bash
-# Find host IP
-ip route | grep default | awk '{print $3}'
-
-# Use that IP in config, e.g., http://172.17.0.1:11434
-```
-
 ---
 
 ## 5. Install Ollama (for Heartbeats)
@@ -378,14 +329,6 @@ chmod +x /tmp/ollama-install.sh
 brew install ollama
 ```
 
-### Alternative: Manual Install (Linux)
-
-```bash
-# Download the binary directly
-curl -L https://ollama.com/download/ollama-linux-amd64 -o /usr/local/bin/ollama
-chmod +x /usr/local/bin/ollama
-```
-
 ### Pull the Heartbeat Model
 
 ```bash
@@ -410,10 +353,24 @@ You can run Ollama as a background service:
 
 ```bash
 # macOS: Ollama app runs in menu bar automatically
-# Linux: Use systemd
-sudo systemctl enable ollama
-sudo systemctl start ollama
 ```
+
+### Alternative: Skip Ollama — Use Gemini Flash for Heartbeats
+
+If you don't want to install Ollama or lack the disk space, you can use **Gemini Flash** for heartbeats instead. The free tier gives you 15 requests per minute — more than enough.
+
+1. Get a free API key at https://aistudio.google.com/apikey
+2. Set the environment variable:
+
+```bash
+export GEMINI_API_KEY="your-gemini-api-key"
+# Add to ~/.profile or ~/.zshrc to persist
+echo 'export GEMINI_API_KEY="your-gemini-api-key"' >> ~/.profile
+```
+
+3. Use `google/gemini-2.0-flash` as your heartbeat model (see [Section 10](#10-configure-heartbeats)).
+
+This works, but Ollama is recommended for heartbeats since it's fully free, offline, and has zero rate-limit risk. Save Gemini Flash quota for actual tasks.
 
 ---
 
@@ -434,12 +391,7 @@ For email access, you have two options:
 #### Option A: Himalaya (IMAP/SMTP - any email provider)
 
 ```bash
-# macOS
 brew install himalaya
-
-# Linux (download from releases)
-curl -L https://github.com/pimalaya/himalaya/releases/latest/download/himalaya-x86_64-linux.tar.gz | tar xz
-sudo mv himalaya /usr/local/bin/
 ```
 
 #### Option B: gog (Google Workspace - Gmail/Calendar/Drive)
@@ -816,9 +768,6 @@ Store the password securely:
 ```bash
 # macOS Keychain
 security add-generic-password -s "gmail-app-password" -a "$USER" -w "your-app-password"
-
-# Linux (pass): Install pass first, then
-pass insert email/gmail
 ```
 
 ### Option B: gog (Google Workspace)
@@ -1227,10 +1176,6 @@ docker compose up -d --force-recreate openclaw-gateway
 # Check Docker network (for Ollama connectivity)
 docker compose exec openclaw-gateway curl -s http://host.docker.internal:11434/api/tags
 
-# If host.docker.internal doesn't work (Linux), use host IP:
-HOST_IP=$(ip route | grep default | awk '{print $3}')
-docker compose exec openclaw-gateway curl -s http://$HOST_IP:11434/api/tags
-
 # Verify volume mounts
 docker compose exec openclaw-gateway ls -la /home/node/.openclaw/
 docker compose exec openclaw-gateway ls -la /home/node/.openclaw/workspace/
@@ -1294,17 +1239,19 @@ docker compose run --rm openclaw-cli <command>
 
 | Service | Env Variable | Config Key |
 |---------|--------------|------------|
-| **Anthropic Claude** | `ANTHROPIC_API_KEY` | Set during onboarding |
+| **Anthropic Claude** | `ANTHROPIC_API_KEY` | For complex/difficult tasks |
+| **OpenAI GPT** | `OPENAI_API_KEY` | Alternative for complex tasks |
+| **Google Gemini** | `GEMINI_API_KEY` | Free tier — default for everyday tasks |
 | Brave Search | `BRAVE_API_KEY` | `tools.web.search.apiKey` |
 | Perplexity | `PERPLEXITY_API_KEY` | `tools.web.search.perplexity.apiKey` |
 | OpenRouter | `OPENROUTER_API_KEY` | `tools.web.search.perplexity.apiKey` |
-| Ollama | N/A (local) | `providers.ollama.endpoint` |
+| Ollama | N/A (local) | Heartbeats (free, offline) |
 
 ---
 
 ## Complete Configuration Example
 
-Here's a full `~/.openclaw/openclaw.json` combining all features from this guide:
+Here's a full `~/.openclaw/openclaw.json` with the recommended tiered model setup:
 
 ```json
 {
@@ -1317,6 +1264,7 @@ Here's a full `~/.openclaw/openclaw.json` combining all features from this guide
   },
   "agents": {
     "defaults": {
+      "model": "google/gemini-2.0-flash",
       "workspace": "~/.openclaw/workspace",
       "userTimezone": "America/New_York",
       "heartbeat": {
@@ -1352,7 +1300,68 @@ Here's a full `~/.openclaw/openclaw.json` combining all features from this guide
 }
 ```
 
-> **Note:** Replace `YOUR_BRAVE_API_KEY` with your actual key. For Docker, use `http://host.docker.internal:11434` for the Ollama endpoint.
+> **Note:** Replace `YOUR_BRAVE_API_KEY` with your actual key. The default model is Gemini Flash (free); switch to a heavier model per-conversation with `/model` when needed. For Docker, use `http://host.docker.internal:11434` for the Ollama endpoint.
+
+---
+
+## Recommended Model Strategy
+
+Use a tiered approach — cheap for routine work, powerful when it matters:
+
+| Tier | Model | Use Case | Cost |
+|------|-------|----------|------|
+| **Heartbeats** | `ollama/llama3.2:3b` | Periodic checks (email, calendar, tasks) | Free (local) |
+| **Everyday tasks** | `google/gemini-2.0-flash` | Quick questions, summaries, drafts, lookups | Free (API) |
+| **Audit** | `anthropic/claude-sonnet-4-6` | Review outbound actions (emails, messages, purchases) | ~$3-5/mo |
+| **Complex tasks** | `anthropic/claude-sonnet-4-6` or `openai/gpt-4o` | Deep analysis, long writing, coding, reasoning | Pay-per-use |
+
+### How it works
+
+- **Default model** is set to `google/gemini-2.0-flash` in your config — all new conversations use it automatically.
+- **Heartbeats** use `ollama/llama3.2:3b` — runs locally, no API calls, no cost.
+- **Audit tier** — when Flash drafts an email, sends a message, or takes an action on an external service, route the output through Claude for a quick sanity check before executing. This costs ~$0.01 per audit (~1-2K tokens in, ~200-500 out). At 10-15 audits/day you're looking at $3-5/month for peace of mind.
+- **Switch on demand** with the `/model` command when you need more power:
+  ```
+  /model claude-sonnet-4-6
+  ```
+  or
+  ```
+  /model gpt-4o
+  ```
+
+### What to audit vs. skip
+
+| Audit (outbound actions) | Skip (read-only) |
+|--------------------------|-------------------|
+| Sending emails/messages | Summarizing content |
+| Scheduling events | Answering questions |
+| Making purchases | Web search lookups |
+| Modifying files/data | Reading email |
+| Posting to channels | Checking calendar |
+
+### API Keys
+
+Set whichever paid providers you want available:
+
+```bash
+# Gemini (free tier — already set up if you followed the guide)
+export GEMINI_API_KEY="your-gemini-key"
+
+# Anthropic (for when you need Claude)
+export ANTHROPIC_API_KEY="sk-ant-your-key"
+
+# OpenAI (for when you need GPT)
+export OPENAI_API_KEY="sk-your-key"
+
+# Persist to shell profile
+echo 'export GEMINI_API_KEY="your-gemini-key"' >> ~/.zshrc
+echo 'export ANTHROPIC_API_KEY="sk-ant-your-key"' >> ~/.zshrc
+echo 'export OPENAI_API_KEY="sk-your-key"' >> ~/.zshrc
+```
+
+You only pay for Anthropic/OpenAI when you explicitly switch to them. Day-to-day usage on Gemini Flash + Ollama heartbeats costs nothing.
+
+> **Tip:** Gemini Flash's free tier gives 1,500 requests/day and 1M tokens/minute — plenty for normal personal assistant use. Only reach for Claude or GPT when the task actually needs it (complex reasoning, long documents, code generation).
 
 ---
 
@@ -1374,58 +1383,12 @@ pnpm openclaw daemon start
 pnpm openclaw daemon status
 ```
 
-### Native (Linux)
-
-```bash
-# Install systemd user service
-pnpm openclaw daemon install
-systemctl --user enable openclaw-gateway
-systemctl --user start openclaw-gateway
-
-# Check status
-systemctl --user status openclaw-gateway
-```
-
-### Docker (systemd)
-
-Create `/etc/systemd/system/openclaw-docker.service`:
-
-```ini
-[Unit]
-Description=OpenClaw Gateway (Docker)
-Requires=docker.service
-After=docker.service
-
-[Service]
-Type=simple
-WorkingDirectory=/path/to/openclaw
-ExecStart=/usr/bin/docker compose up openclaw-gateway
-ExecStop=/usr/bin/docker compose down
-Restart=unless-stopped
-User=your-username
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable it:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable openclaw-docker
-sudo systemctl start openclaw-docker
-```
-
 ### Ollama Auto-Start
 
 ```bash
-# macOS: Ollama app auto-starts (add to Login Items)
+# Ollama app auto-starts (add to Login Items)
 # Or use Homebrew services
 brew services start ollama
-
-# Linux: systemd
-sudo systemctl enable ollama
-sudo systemctl start ollama
 ```
 
 ---
@@ -1454,21 +1417,6 @@ Access via SSH tunnel:
 ssh -L 18789:localhost:18789 user@your-vps
 
 # Then access http://localhost:18789/openclaw/
-```
-
-### Firewall Rules
-
-```bash
-# UFW (Ubuntu)
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh
-sudo ufw allow 11434/tcp  # Ollama (if needed remotely)
-# Do NOT allow 18789 unless behind auth
-sudo ufw enable
-
-# Check
-sudo ufw status
 ```
 
 ### Use Tailscale (Recommended for Remote Access)
@@ -2160,8 +2108,7 @@ For shared/production deployments:
 
 ```bash
 # Install PostgreSQL
-brew install postgresql@16  # macOS
-sudo apt install postgresql  # Linux
+brew install postgresql@16
 
 # Start service
 brew services start postgresql@16
@@ -2567,34 +2514,6 @@ curl -X POST "http://your-server:9876/trigger/notify" \
   -H "Authorization: Bearer YOUR_SECRET_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message": "🚀 Deployment complete!"}'
-```
-
-### Systemd Service (Linux)
-
-Create `/etc/systemd/system/openclaw-webhook.service`:
-
-```ini
-[Unit]
-Description=OpenClaw Webhook Server
-After=network.target
-
-[Service]
-Type=simple
-User=your-username
-Environment=WEBHOOK_SECRET=your-secure-token
-ExecStart=/usr/bin/python3 /home/your-username/.openclaw/workspace/scripts/webhook_server.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable openclaw-webhook
-sudo systemctl start openclaw-webhook
 ```
 
 ### Secure with Nginx (Production)
